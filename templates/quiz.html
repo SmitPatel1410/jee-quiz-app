@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Take Quiz</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .quiz-layout {
+      display: flex;
+    }
+
+    .quiz-container {
+      flex: 1;
+      padding: 20px;
+    }
+
+    .sidebar {
+      width: 250px;
+      border-left: 2px solid #ccc;
+      padding: 10px;
+      background-color: #f1f1f1;
+    }
+
+    .question-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .question-btn {
+      padding: 8px;
+      font-size: 14px;
+      background-color: #ccc;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .question-btn.visited {
+      background-color: #2196F3;
+      color: white;
+    }
+
+    .question-btn.answered {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .question-btn.marked {
+      background-color: #9C27B0; /* Purple */
+      color: white;
+    }
+
+    .question-btn.current {
+      border: 2px solid #000;
+    }
+
+    #resultContainer {
+      background-color: #e0ffe0;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body class="quiz-page">
+  <div class="quiz-layout">
+    <div class="quiz-container">
+      <h2 id="quizTitle">Quiz</h2>
+      <div id="userInfo"><p>Logged in as: <strong>{{ username }}</strong></p></div>
+      <div id="timer">Time Left: <span id="timeLeft">1800</span>s</div>
+      <div id="questionContainer"></div>
+      <button id="prevBtn">Previous</button>
+      <button id="nextBtn">Next</button>
+      <button id="markBtn">Mark for Review</button> <!-- ✅ UPDATED dynamically -->
+      <button id="submitBtn">Complete Quiz</button>
+      <div id="resultContainer" style="display: none;"></div>
+    </div>
+
+    <div class="sidebar">
+      <h4>Question Navigator</h4>
+      <div class="question-grid" id="questionNavigator"></div>
+    </div>
+  </div>
+
+  <script>
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let questionStates = [];
+
+    async function fetchQuestions() {
+      const response = await fetch('/api/questions');
+      questions = await response.json();
+
+      questionStates = questions.map(q => ({
+        visited: false,
+        answered: false,
+        selected: null,
+        marked: false
+      }));
+
+      renderQuestion(0);
+    }
+
+    const navContainer = document.getElementById("questionNavigator");
+    const questionContainer = document.getElementById("questionContainer");
+    const resultContainer = document.getElementById("resultContainer");
+    const markBtn = document.getElementById("markBtn"); // ✅ Capture the mark button
+
+    function renderQuestion(index) {
+      const q = questions[index];
+      questionContainer.innerHTML = `
+        <p><strong>Question ${index + 1}:</strong> ${q.q}</p>
+        ${q.options.map((opt, i) => `
+          <label>
+            <input type="radio" name="option" value="${i}" ${questionStates[index].selected == i ? 'checked' : ''}>
+            ${opt}
+          </label><br/>
+        `).join('')}
+      `;
+
+      // Update mark button text based on current state ✅
+      markBtn.textContent = questionStates[index].marked ? "Unmark" : "Mark for Review";
+
+      document.getElementsByName("option").forEach(radio => {
+        radio.addEventListener("change", (e) => {
+          questionStates[index].answered = true;
+          questionStates[index].selected = parseInt(e.target.value);
+          updateNavButtons();
+        });
+      });
+
+      questionStates[index].visited = true;
+      updateNavButtons();
+    }
+
+    function updateNavButtons() {
+      navContainer.innerHTML = "";
+      for (let i = 0; i < questions.length; i++) {
+        const btn = document.createElement("button");
+        btn.classList.add("question-btn");
+        if (questionStates[i].marked) btn.classList.add("marked");
+        else if (questionStates[i].answered) btn.classList.add("answered");
+        else if (questionStates[i].visited) btn.classList.add("visited");
+        if (i === currentQuestionIndex) btn.classList.add("current");
+        btn.textContent = i + 1;
+        btn.addEventListener("click", () => {
+          currentQuestionIndex = i;
+          renderQuestion(currentQuestionIndex);
+        });
+        navContainer.appendChild(btn);
+      }
+    }
+
+    document.getElementById("nextBtn").addEventListener("click", () => {
+      if (currentQuestionIndex < questions.length - 1) {
+        currentQuestionIndex++;
+        renderQuestion(currentQuestionIndex);
+      }
+    });
+
+    document.getElementById("prevBtn").addEventListener("click", () => {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        renderQuestion(currentQuestionIndex);
+      }
+    });
+
+    // ✅ Toggle marking and update button text and navigator
+    markBtn.addEventListener("click", () => {
+      const state = questionStates[currentQuestionIndex];
+      state.marked = !state.marked;
+      markBtn.textContent = state.marked ? "Unmark" : "Mark for Review";
+      updateNavButtons();
+    });
+
+    document.getElementById("submitBtn").addEventListener("click", () => {
+      let correctCount = 0;
+      questions.forEach((q, i) => {
+        if (questionStates[i].selected === q.answer) {
+          correctCount++;
+        }
+      });
+
+      questionContainer.style.display = 'none';
+      document.getElementById("nextBtn").style.display = 'none';
+      document.getElementById("prevBtn").style.display = 'none';
+      document.getElementById("submitBtn").style.display = 'none';
+      document.getElementById("markBtn").style.display = 'none';
+      resultContainer.style.display = 'block';
+      resultContainer.innerHTML = `<h3>Quiz Complete!</h3><p>You scored <strong>${correctCount}</strong> out of <strong>${questions.length}</strong>.</p>`;
+    });
+
+    fetchQuestions();
+  </script>
+</body>
+</html>

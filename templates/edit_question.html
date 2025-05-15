@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Question</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2em; background: #f0f2f5; }
+    form { background: white; padding: 1em; border-radius: 10px; margin-bottom: 2em; }
+    input, select { margin-bottom: 1em; padding: 0.5em; width: 100%; }
+    button { padding: 0.5em 1em; }
+  </style>
+</head>
+<body>
+  <h2>Edit Question</h2>
+  
+  <form method="POST">
+    <input type="text" name="question" placeholder="Enter Question" value="{{ question.question_text }}" required>
+    <input type="text" name="option1" placeholder="Option 1" value="{{ question.option1 }}" required>
+    <input type="text" name="option2" placeholder="Option 2" value="{{ question.option2 }}" required>
+    <input type="text" name="option3" placeholder="Option 3" value="{{ question.option3 }}" required>
+    <select name="correct" required>
+      <option value="" disabled>Select Correct Option</option>
+      <option value="0" {% if question.correct_answer == 0 %}selected{% endif %}>Option 1</option>
+      <option value="1" {% if question.correct_answer == 1 %}selected{% endif %}>Option 2</option>
+      <option value="2" {% if question.correct_answer == 2 %}selected{% endif %}>Option 3</option>
+    </select>
+    <button type="submit">Update Question</button>
+  </form>
+
+  <a href="{{ url_for('admin_panel') }}">Back to Admin Panel</a>
+</body>
+</html>

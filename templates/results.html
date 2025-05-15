@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz Results</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="result-container">
+    <h2>Congratulations, {{ username }}!</h2>
+    <p class="score">Your score: <script>document.write(localStorage.getItem("quizScore") || "0/0");</script></p>
+
+    <p id="result"></p>
+
+    <a href="{{ url_for('logout') }}">Logout</a>
+  </div>
+
+  <script>
+    // Retrieve score and total questions from localStorage
+    const score = localStorage.getItem("quizScore") || "0/0";
+    const [scoreValue, total] = score.split("/").map(Number);
+
+    // Calculate percentage
+    const percentage = (scoreValue / total) * 100;
+
+    // Check if passed or failed
+    const resultText = percentage >= 40 ? "Passed" : "Failed";
+    document.getElementById("result").textContent = "Result: " + resultText;
+  </script>
+</body>
+</html>
